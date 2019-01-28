@@ -1,6 +1,7 @@
-#include <TinyGPS++.h>
 #include <PubSubClient.h>
 #include <ESP8266WiFi.h>
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
 
 #define wifi_ssid "Mako Brimob"
 #define wifi_password "password"
@@ -10,6 +11,10 @@
 #define mqtt_password "pass"
 
 #define gps_topic "gps"
+
+====================== TILL HERE, CHECK ESP8266 pinout and connection to UBLOX GPS
+
+static const int RXPin = 12, TXPin = 13;
 
 // Buffer to decode MQTT messages
 char message_buff[100];
