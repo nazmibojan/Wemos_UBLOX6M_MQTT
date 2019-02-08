@@ -3,34 +3,36 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
-#define wifi_ssid "Mako Brimob"
-#define wifi_password "password"
+#define wifi_ssid "SSID"
+#define wifi_password "PASSWD"
 
-#define mqtt_server "192.168.43.7"
-#define mqtt_user "user"
-#define mqtt_password "pass"
+#define mqtt_server "IP"
+#define mqtt_user "username"
+#define mqtt_password "password"
 
-#define gps_topic "gps"
+#define latitude_topic "latitude"
+#define longitude_topic "longitude"
 
-====================== TILL HERE, CHECK ESP8266 pinout and connection to UBLOX GPS
+static const int RXPin = 4, TXPin = 5;
+static const uint32_t GPSBaud = 9600;
 
-static const int RXPin = 12, TXPin = 13;
-
-// Buffer to decode MQTT messages
-char message_buff[100];
+float latitude , longitude;
+byte GPSData;
 
 long lastMsg = 0;   
-long lastRecu = 0;
 bool debug = true;
+
+TinyGPSPlus gps;
+SoftwareSerial ss(RXPin, TXPin);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 void setup() {
   Serial.begin(9600);
-  pinMode(D2, OUTPUT);
   setup_wifi();
   client.setServer(mqtt_server, 1883);
+  ss.begin(GPSBaud);
 }
 
 /*
@@ -54,6 +56,7 @@ void setup_wifi(void)
   Serial.println("WiFi OK ");
   Serial.print("=> ESP8266 IP address: ");
   Serial.print(WiFi.localIP());
+  Serial.println("");
 }
 
 void reconnect() {
@@ -76,19 +79,31 @@ void loop() {
     reconnect();
   }
   client.loop();
+  
+  if (debug) {
+    while (ss.available() > 0) {
+//        GPSData = ss.read();
+//        Serial.write(GPSData);
+        
+      if (gps.encode(ss.read())) {
+        if (gps.location.isValid()) {
+          latitude = gps.location.lat();
+          longitude = gps.location.lng();
+        }
+      }    
+    }
+      
+    Serial.print("Latitude : ");
+    Serial.print(latitude);
+    Serial.print(" | Longitude : ");
+    Serial.println(longitude);     
+  }
 
   long now = millis();
   // Send a message every second
   if(now -  lastMsg > 1000 * 1){
     lastMsg = now;
-      
-    if (debug) {
-      Serial.print("Temperature : ");
-      Serial.print(t);
-      Serial.print(" | Humidity : ");
-      Serial.println(h);
-    }
-
-    client.publish(gps, String(t).c_str(), true);
+      client.publish(latitude_topic, String(latitude).c_str(), true);
+      client.publish(longitude_topic, String(longitude).c_str(), true);
   }  
 }
