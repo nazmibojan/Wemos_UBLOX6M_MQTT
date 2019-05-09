@@ -2,4 +2,4 @@
 
 *still in development*
 
-Stream GPS data to MQTT broker
+Stream GPS data to MQTT broker in JSON format
